@@ -23,6 +23,11 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
+// Route for the homepage
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'studentlink.html'));
+});
+
 // Ensure directories exist
 ['uploads', 'data'].forEach(dir => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
