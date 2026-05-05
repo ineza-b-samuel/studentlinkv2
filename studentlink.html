@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudentLink - Global Student Network</title>
+    <link rel="stylesheet" href="studentlink.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Loading Screen -->
+        <div id="loadingScreen" class="loading-screen">
+            <div class="loader"></div>
+            <h1>StudentLink</h1>
+            <p>Connecting Students Worldwide</p>
+        </div>
+
+        <!-- Main App -->
+        <div id="mainApp" style="display:none;">
+            <!-- Sidebar -->
+            <nav id="sidebar" class="sidebar">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>StudentLink</span>
+                </div>
+
+                <div class="nav-menu">
+                    <a href="#" class="nav-item active" data-page="feed">
+                        <i class="fas fa-home"></i>
+                        <span>Feed</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="explore">
+                        <i class="fas fa-compass"></i>
+                        <span>Explore</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="groups">
+                        <i class="fas fa-users"></i>
+                        <span>Study Groups</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="messages">
+                        <i class="fas fa-comment-dots"></i>
+                        <span>Messages</span>
+                        <span id="messageBadge" class="badge" style="display:none;">0</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="reels">
+                        <i class="fas fa-video"></i>
+                        <span>Reels</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="stories">
+                        <i class="fas fa-circle"></i>
+                        <span>Stories</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="studyrooms">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        <span>Study Rooms</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="profile">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                </div>
+
+                <div class="user-info">
+                    <img id="userAvatar" src="" alt="Avatar" class="avatar">
+                    <div class="user-details">
+                        <span id="userName">User</span>
+                        <span id="userUsername">@username</span>
+                    </div>
+                    <button id="logoutBtn" class="btn-icon">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main id="mainContent" class="main-content">
+                <!-- Pages will be rendered here -->
+            </main>
+
+            <!-- Right Sidebar -->
+            <aside id="rightSidebar" class="right-sidebar">
+                <div class="suggestions">
+                    <h3>Suggested Users</h3>
+                    <div id="suggestedUsers"></div>
+                </div>
+                <div class="trending">
+                    <h3>Trending Topics</h3>
+                    <div id="trendingTopics"></div>
+                </div>
+                <div class="online-users">
+                    <h3>Online Now</h3>
+                    <div id="onlineUsersList"></div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="postModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Create Post</h2>
+            <textarea id="postContent" placeholder="What's on your mind?"></textarea>
+            <div id="fileDropZone" class="file-drop-zone">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Drop files here or click to upload</p>
+                <input type="file" id="fileInput" multiple accept="image/*,video/*,.pdf,.doc,.docx"
+                    style="display:none;">
+            </div>
+            <div id="filePreview"></div>
+            <div class="post-options">
+                <input type="text" id="postTags" placeholder="Add tags (comma separated)">
+                <label>
+                    <input type="checkbox" id="isQuestion"> Ask as question
+                </label>
+                <select id="postSubject">
+                    <option value="General">General</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Physics">Physics</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Biology">Biology</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Medicine">Medicine</option>
+                    <option value="Arts">Arts</option>
+                    <option value="Business">Business</option>
+                    <option value="Law">Law</option>
+                </select>
+            </div>
+            <button id="publishPost" class="btn-primary">Publish</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="studentlink.js"></script>
+</body>
+
+</html>

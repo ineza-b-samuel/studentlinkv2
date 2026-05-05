@@ -1,0 +1,7 @@
+# On Windows (Command Prompt):
+type nul > uploads\.gitkeep
+type nul > data\.gitkeep
+
+# On Mac/Linux:
+touch uploads/.gitkeep
+touch data/.gitkeep
