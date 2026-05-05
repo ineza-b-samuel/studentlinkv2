@@ -17,23 +17,28 @@ const io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// Middleware
+// ==================== MIDDLEWARE ====================
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Route for the homepage
+// ==================== ROOT ROUTE (MUST BE BEFORE SERVER.LISTEN) ====================
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'studentlink.html'));
 });
 
-// Ensure directories exist
+// Catch-all route for SPA
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'studentlink.html'));
+});
+
+// ==================== ENSURE DIRECTORIES EXIST ====================
 ['uploads', 'data'].forEach(dir => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// Database
+// ==================== DATABASE ====================
 const DB = {
     users: [],
     posts: [],
@@ -91,55 +96,13 @@ const initDB = () => {
     // Add sample users
     if (DB.users.length <= 1) {
         const sampleUsers = [
-            {
-                username: 'sarah_cs',
-                fullName: 'Sarah Johnson',
-                country: 'United States',
-                university: 'MIT',
-                bio: 'Computer Science Major | AI Enthusiast'
-            },
-            {
-                username: 'alex_med',
-                fullName: 'Alex Chen',
-                country: 'Singapore',
-                university: 'National University of Singapore',
-                bio: 'Medical Student | Research Focus'
-            },
-            {
-                username: 'maria_arts',
-                fullName: 'Maria Garcia',
-                country: 'Spain',
-                university: 'University of Barcelona',
-                bio: 'Fine Arts & Design Student'
-            },
-            {
-                username: 'raj_eng',
-                fullName: 'Raj Patel',
-                country: 'India',
-                university: 'IIT Delhi',
-                bio: 'Engineering Student | Robotics Club'
-            },
-            {
-                username: 'lisa_bio',
-                fullName: 'Lisa Anderson',
-                country: 'United Kingdom',
-                university: 'University of Oxford',
-                bio: 'Biology Research Student'
-            },
-            {
-                username: 'yuki_physics',
-                fullName: 'Yuki Tanaka',
-                country: 'Japan',
-                university: 'University of Tokyo',
-                bio: 'Physics Major | Quantum Computing'
-            },
-            {
-                username: 'omar_business',
-                fullName: 'Omar Hassan',
-                country: 'UAE',
-                university: 'NYU Abu Dhabi',
-                bio: 'Business & Entrepreneurship'
-            }
+            { username: 'sarah_cs', fullName: 'Sarah Johnson', country: 'United States', university: 'MIT', bio: 'Computer Science Major | AI Enthusiast' },
+            { username: 'alex_med', fullName: 'Alex Chen', country: 'Singapore', university: 'National University of Singapore', bio: 'Medical Student | Research Focus' },
+            { username: 'maria_arts', fullName: 'Maria Garcia', country: 'Spain', university: 'University of Barcelona', bio: 'Fine Arts & Design Student' },
+            { username: 'raj_eng', fullName: 'Raj Patel', country: 'India', university: 'IIT Delhi', bio: 'Engineering Student | Robotics Club' },
+            { username: 'lisa_bio', fullName: 'Lisa Anderson', country: 'United Kingdom', university: 'University of Oxford', bio: 'Biology Research Student' },
+            { username: 'yuki_physics', fullName: 'Yuki Tanaka', country: 'Japan', university: 'University of Tokyo', bio: 'Physics Major | Quantum Computing' },
+            { username: 'omar_business', fullName: 'Omar Hassan', country: 'UAE', university: 'NYU Abu Dhabi', bio: 'Business & Entrepreneurship' }
         ];
 
         sampleUsers.forEach(u => {
@@ -171,11 +134,11 @@ const saveDB = (name) => {
     fs.writeFileSync(filePath, JSON.stringify(DB[name], null, 2));
 };
 
-// JWT Configuration
+// ==================== JWT CONFIGURATION ====================
 const JWT_SECRET = process.env.JWT_SECRET || 'studentlink-dev-secret-change-in-production';
 const JWT_EXPIRY = '7d';
 
-// Authentication Middleware
+// ==================== AUTH MIDDLEWARE ====================
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -193,7 +156,6 @@ const authenticateToken = (req, res, next) => {
     }
 };
 
-// Admin Middleware
 const isAdmin = (req, res, next) => {
     const user = DB.users.find(u => u.id === req.user.id);
     if (!user || !user.isAdmin) {
@@ -202,7 +164,7 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
-// File Upload Configuration
+// ==================== FILE UPLOAD CONFIGURATION ====================
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -215,7 +177,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    limits: { fileSize: 50 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif|mp4|webm|pdf|doc|docx|ppt|pptx|xls|xlsx|zip|txt/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -228,9 +190,7 @@ const upload = multer({
     }
 });
 
-// ==================== API ROUTES ====================
-
-// Auth Routes
+// ==================== AUTH ROUTES ====================
 app.post('/api/register', async (req, res) => {
     try {
         const { username, email, password, fullName, country, university } = req.body;
@@ -316,7 +276,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// User Routes
+// ==================== USER ROUTES ====================
 app.get('/api/users', authenticateToken, (req, res) => {
     const users = DB.users.map(({ password, ...user }) => user);
     res.json({ users });
@@ -345,7 +305,6 @@ app.put('/api/users/profile', authenticateToken, upload.single('profilePic'), (r
     res.json(userWithoutPassword);
 });
 
-// Follow/Unfollow
 app.post('/api/users/:id/follow', authenticateToken, (req, res) => {
     const targetUser = DB.users.find(u => u.id === req.params.id);
     const currentUser = DB.users.find(u => u.id === req.user.id);
@@ -368,7 +327,7 @@ app.post('/api/users/:id/follow', authenticateToken, (req, res) => {
     res.json({ following: !isFollowing });
 });
 
-// Post Routes
+// ==================== POST ROUTES ====================
 app.post('/api/posts', authenticateToken, upload.array('files', 5), (req, res) => {
     try {
         const { content, tags, isQuestion, subject } = req.body;
@@ -404,7 +363,6 @@ app.post('/api/posts', authenticateToken, upload.array('files', 5), (req, res) =
         DB.posts.unshift(post);
         saveDB('posts');
 
-        // Populate author info
         const author = DB.users.find(u => u.id === post.authorId);
         const populatedPost = {
             ...post,
@@ -419,23 +377,6 @@ app.post('/api/posts', authenticateToken, upload.array('files', 5), (req, res) =
         };
 
         io.emit('new_post', populatedPost);
-
-        // Create notification for followers
-        const currentUser = DB.users.find(u => u.id === req.user.id);
-        currentUser.followers.forEach(followerId => {
-            const notification = {
-                id: uuidv4(),
-                userId: followerId,
-                type: 'new_post',
-                message: `${currentUser.fullName} posted: "${content.substring(0, 50)}..."`,
-                relatedId: post.id,
-                read: false,
-                timestamp: Date.now()
-            };
-            DB.notifications.unshift(notification);
-        });
-        saveDB('notifications');
-
         res.status(201).json(populatedPost);
     } catch (error) {
         console.error('Post creation error:', error);
@@ -444,36 +385,12 @@ app.post('/api/posts', authenticateToken, upload.array('files', 5), (req, res) =
 });
 
 app.get('/api/posts', authenticateToken, (req, res) => {
-    const { subject, tag, author } = req.query;
-    let posts = [...DB.posts];
-
-    if (subject) {
-        posts = posts.filter(p => p.subject === subject);
-    }
-    if (tag) {
-        posts = posts.filter(p => p.tags.includes(tag));
-    }
-    if (author) {
-        posts = posts.filter(p => p.authorId === author);
-    }
-
-    const populatedPosts = posts.map(post => ({
+    const posts = DB.posts.map(post => ({
         ...post,
         author: DB.users.find(u => u.id === post.authorId)
     })).filter(p => p.author);
 
-    res.json({ posts: populatedPosts });
-});
-
-app.get('/api/posts/:id', authenticateToken, (req, res) => {
-    const post = DB.posts.find(p => p.id === req.params.id);
-    if (!post) return res.status(404).json({ error: 'Post not found' });
-
-    post.views++;
-    saveDB('posts');
-
-    const author = DB.users.find(u => u.id === post.authorId);
-    res.json({ ...post, author });
+    res.json({ posts });
 });
 
 app.delete('/api/posts/:id', authenticateToken, (req, res) => {
@@ -482,27 +399,16 @@ app.delete('/api/posts/:id', authenticateToken, (req, res) => {
 
     const post = DB.posts[postIndex];
 
-    // Only author or admin can delete
     if (post.authorId !== req.user.id && !DB.users.find(u => u.id === req.user.id)?.isAdmin) {
-        return res.status(403).json({ error: 'Not authorized to delete this post' });
+        return res.status(403).json({ error: 'Not authorized' });
     }
-
-    // Delete associated files
-    post.files?.forEach(file => {
-        const filePath = path.join(__dirname, 'uploads', file.filename);
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
-    });
 
     DB.posts.splice(postIndex, 1);
     saveDB('posts');
-
     io.emit('post_deleted', req.params.id);
     res.json({ success: true });
 });
 
-// Like/Unlike
 app.post('/api/posts/:id/like', authenticateToken, (req, res) => {
     const post = DB.posts.find(p => p.id === req.params.id);
     if (!post) return res.status(404).json({ error: 'Post not found' });
@@ -519,7 +425,6 @@ app.post('/api/posts/:id/like', authenticateToken, (req, res) => {
     res.json({ liked: likeIndex === -1, count: post.likes.length });
 });
 
-// Comments
 app.post('/api/posts/:id/comments', authenticateToken, (req, res) => {
     const post = DB.posts.find(p => p.id === req.params.id);
     if (!post) return res.status(404).json({ error: 'Post not found' });
@@ -544,20 +449,9 @@ app.post('/api/posts/:id/comments', authenticateToken, (req, res) => {
     res.status(201).json({ ...comment, author });
 });
 
-// Share
-app.post('/api/posts/:id/share', authenticateToken, (req, res) => {
-    const post = DB.posts.find(p => p.id === req.params.id);
-    if (!post) return res.status(404).json({ error: 'Post not found' });
-
-    post.shares++;
-    saveDB('posts');
-
-    res.json({ shares: post.shares });
-});
-
-// Group Routes
-app.post('/api/groups', authenticateToken, upload.single('groupImage'), (req, res) => {
-    const { name, description, subject, isPrivate } = req.body;
+// ==================== GROUP ROUTES ====================
+app.post('/api/groups', authenticateToken, (req, res) => {
+    const { name, description, subject } = req.body;
 
     if (!name || !name.trim()) {
         return res.status(400).json({ error: 'Group name is required' });
@@ -568,11 +462,9 @@ app.post('/api/groups', authenticateToken, upload.single('groupImage'), (req, re
         name: name.trim(),
         description: description || '',
         subject: subject || 'General',
-        isPrivate: isPrivate === 'true',
         creatorId: req.user.id,
         members: [req.user.id],
         admins: [req.user.id],
-        image: req.file ? `/uploads/${req.file.filename}` : '',
         posts: [],
         createdAt: Date.now()
     };
@@ -585,7 +477,6 @@ app.post('/api/groups', authenticateToken, upload.single('groupImage'), (req, re
 app.get('/api/groups', authenticateToken, (req, res) => {
     const groups = DB.groups.map(group => ({
         ...group,
-        creator: DB.users.find(u => u.id === group.creatorId),
         memberCount: group.members.length
     }));
     res.json({ groups });
@@ -598,34 +489,19 @@ app.post('/api/groups/:id/join', authenticateToken, (req, res) => {
     if (!group.members.includes(req.user.id)) {
         group.members.push(req.user.id);
         saveDB('groups');
-
-        io.emit('member_joined', { groupId: group.id, userId: req.user.id });
     }
 
     res.json({ success: true });
 });
 
-app.post('/api/groups/:id/leave', authenticateToken, (req, res) => {
-    const group = DB.groups.find(g => g.id === req.params.id);
-    if (!group) return res.status(404).json({ error: 'Group not found' });
-
-    group.members = group.members.filter(m => m !== req.user.id);
-    saveDB('groups');
-
-    res.json({ success: true });
-});
-
-// Message Routes
+// ==================== MESSAGE ROUTES ====================
 app.get('/api/conversations/:userId', authenticateToken, (req, res) => {
     const conversations = DB.messages
-        .filter(msg => msg.participants.includes(req.params.userId))
+        .filter(msg => msg.participants?.includes(req.params.userId))
         .reduce((acc, msg) => {
             const otherUserId = msg.participants.find(p => p !== req.params.userId);
             if (!acc[otherUserId]) {
-                acc[otherUserId] = {
-                    userId: otherUserId,
-                    messages: []
-                };
+                acc[otherUserId] = { userId: otherUserId, messages: [] };
             }
             acc[otherUserId].messages.push(msg);
             return acc;
@@ -634,209 +510,46 @@ app.get('/api/conversations/:userId', authenticateToken, (req, res) => {
     res.json({ conversations: Object.values(conversations) });
 });
 
-// Stories Routes
-app.post('/api/stories', authenticateToken, upload.single('media'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: 'Media file is required' });
-    }
-
-    const story = {
-        id: uuidv4(),
-        userId: req.user.id,
-        media: `/uploads/${req.file.filename}`,
-        type: req.file.mimetype.startsWith('video') ? 'video' : 'image',
-        timestamp: Date.now(),
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
-    };
-
-    DB.stories.unshift(story);
-    saveDB('stories');
-    res.status(201).json(story);
-});
-
-app.get('/api/stories', authenticateToken, (req, res) => {
-    const now = Date.now();
-    const activeStories = DB.stories
-        .filter(story => story.expiresAt > now)
-        .map(story => ({
-            ...story,
-            user: DB.users.find(u => u.id === story.userId)
-        }));
-
-    res.json({ stories: activeStories });
-});
-
-// Reels Routes
-app.post('/api/reels', authenticateToken, upload.single('video'), (req, res) => {
-    if (!req.file || !req.file.mimetype.startsWith('video')) {
-        return res.status(400).json({ error: 'Video file is required' });
-    }
-
-    const reel = {
-        id: uuidv4(),
-        userId: req.user.id,
-        video: `/uploads/${req.file.filename}`,
-        caption: req.body.caption || '',
-        tags: req.body.tags ? JSON.parse(req.body.tags) : [],
-        likes: [],
-        comments: [],
-        shares: 0,
-        views: 0,
-        timestamp: Date.now()
-    };
-
-    DB.reels.unshift(reel);
-    saveDB('reels');
-    res.status(201).json(reel);
-});
-
-app.get('/api/reels', authenticateToken, (req, res) => {
-    const reels = DB.reels.map(reel => ({
-        ...reel,
-        user: DB.users.find(u => u.id === reel.userId)
-    }));
-    res.json({ reels });
-});
-
-// Study Room Routes
-app.post('/api/studyrooms', authenticateToken, (req, res) => {
-    const { name, subject, maxParticipants } = req.body;
-
-    if (!name || !name.trim()) {
-        return res.status(400).json({ error: 'Room name is required' });
-    }
-
-    const room = {
-        id: uuidv4(),
-        name: name.trim(),
-        subject: subject || 'General',
-        maxParticipants: maxParticipants || 20,
-        creatorId: req.user.id,
-        participants: [req.user.id],
-        messages: [],
-        createdAt: Date.now()
-    };
-
-    DB.studyRooms.push(room);
-    saveDB('studyRooms');
-    res.status(201).json(room);
-});
-
-app.get('/api/studyrooms', authenticateToken, (req, res) => {
-    res.json({ rooms: DB.studyRooms });
-});
-
-// Notifications
-app.get('/api/notifications', authenticateToken, (req, res) => {
-    const notifications = DB.notifications
-        .filter(n => n.userId === req.user.id)
-        .sort((a, b) => b.timestamp - a.timestamp)
-        .slice(0, 50);
-
-    res.json({ notifications });
-});
-
-// ==================== AI CHAT ROUTE (API KEY HIDDEN) ====================
+// ==================== AI CHAT ROUTE ====================
 app.post('/api/ai/chat', authenticateToken, async (req, res) => {
     try {
-        const { message, history } = req.body;
+        const { message } = req.body;
 
         if (!message || !message.trim()) {
             return res.status(400).json({ error: 'Message is required' });
         }
 
-        // API key is ONLY on the server, never exposed to client
         const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
         if (!OPENROUTER_API_KEY) {
             return res.status(503).json({
-                error: 'AI service is not configured',
-                reply: 'The AI assistant is currently unavailable. Please try again later or contact the administrator.'
+                reply: 'AI assistant is not configured. Please add OPENROUTER_API_KEY to environment variables.'
             });
         }
-
-        const APP_URL = process.env.APP_URL || 'http://localhost:3000';
-
-        const messages = [
-            {
-                role: 'system',
-                content: `You are a helpful AI study buddy for StudentLink, a global student social network. 
-                You help students with:
-                - Academic questions and explanations
-                - Study tips and strategies
-                - Homework help (but don't do it for them)
-                - Subject-specific guidance
-                - Research suggestions
-                - Language learning
-                - Career advice
-                Keep responses educational, encouraging, and appropriate for students.
-                Be concise but thorough. Use emojis occasionally to be friendly.`
-            },
-            ...(history || []).slice(-20).map(msg => ({
-                role: msg.role === 'user' ? 'user' : 'assistant',
-                content: msg.content
-            })),
-            {
-                role: 'user',
-                content: message.trim()
-            }
-        ];
 
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                'HTTP-Referer': APP_URL,
-                'X-Title': 'StudentLink - Global Student Network'
             },
             body: JSON.stringify({
                 model: 'google/gemini-2.0-flash-001',
-                messages: messages,
-                max_tokens: 500,
-                temperature: 0.7
+                messages: [
+                    { role: 'system', content: 'You are a helpful AI study buddy for students.' },
+                    { role: 'user', content: message.trim() }
+                ],
+                max_tokens: 500
             })
         });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error?.message || `API responded with status ${response.status}`);
-        }
-
         const data = await response.json();
-
-        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-            throw new Error('Invalid response format from AI service');
-        }
-
-        res.json({
-            reply: data.choices[0].message.content,
-            model: data.model || 'AI Assistant'
-        });
+        res.json({ reply: data.choices[0].message.content });
 
     } catch (error) {
-        console.error('AI Chat Error:', error);
-
-        // Don't expose API errors to client
-        const userMessage = error.message.includes('API key')
-            ? 'AI service configuration error'
-            : 'I encountered an error processing your request. Please try again.';
-
-        res.status(500).json({
-            error: 'AI service error',
-            reply: userMessage
-        });
+        console.error('AI Error:', error);
+        res.status(500).json({ reply: 'AI service error. Please try again.' });
     }
-});
-
-// AI Health Check (doesn't expose key)
-app.get('/api/ai/status', authenticateToken, (req, res) => {
-    const isConfigured = !!process.env.OPENROUTER_API_KEY;
-    res.json({
-        available: isConfigured,
-        model: isConfigured ? 'Gemini 2.0 Flash' : null,
-        features: isConfigured ? ['Q&A', 'Study Help', 'Explanations'] : []
-    });
 });
 
 // ==================== ADMIN ROUTES ====================
@@ -853,18 +566,8 @@ app.delete('/api/admin/users/:userId', authenticateToken, isAdmin, (req, res) =>
     const userIndex = DB.users.findIndex(u => u.id === req.params.userId);
     if (userIndex === -1) return res.status(404).json({ error: 'User not found' });
 
-    // Don't delete other admins
-    if (DB.users[userIndex].isAdmin) {
-        return res.status(403).json({ error: 'Cannot delete admin accounts' });
-    }
-
     DB.users.splice(userIndex, 1);
     saveDB('users');
-
-    // Remove user's posts
-    DB.posts = DB.posts.filter(p => p.authorId !== req.params.userId);
-    saveDB('posts');
-
     res.json({ success: true });
 });
 
@@ -872,20 +575,9 @@ app.delete('/api/admin/posts/:postId', authenticateToken, isAdmin, (req, res) =>
     const postIndex = DB.posts.findIndex(p => p.id === req.params.postId);
     if (postIndex === -1) return res.status(404).json({ error: 'Post not found' });
 
-    const post = DB.posts[postIndex];
-
-    // Delete associated files
-    post.files?.forEach(file => {
-        const filePath = path.join(__dirname, 'uploads', file.filename);
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
-    });
-
     DB.posts.splice(postIndex, 1);
     saveDB('posts');
-
-    io.emit('post_deleted', req.params.id);
+    io.emit('post_deleted', req.params.postId);
     res.json({ success: true });
 });
 
@@ -896,120 +588,49 @@ io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
     let currentUser = null;
-    let currentUserData = null;
 
     socket.on('login', (userId) => {
         currentUser = userId;
-        currentUserData = DB.users.find(u => u.id === userId);
         onlineUsers.set(userId, socket.id);
-
         io.emit('user_status', { userId, status: 'online' });
-        socket.emit('online_users', Array.from(onlineUsers.keys()));
-
-        console.log(`${currentUserData?.fullName || 'User'} is now online`);
     });
 
     socket.on('send_message', (data) => {
         if (!currentUser || !data.recipientId || !data.text?.trim()) return;
 
-        const participants = [currentUser, data.recipientId].sort();
-        const conversationId = participants.join('_');
-
         const message = {
             id: uuidv4(),
-            conversationId,
             senderId: currentUser,
             recipientId: data.recipientId,
             text: data.text.trim(),
-            timestamp: Date.now(),
-            read: false
+            participants: [currentUser, data.recipientId],
+            timestamp: Date.now()
         };
 
         DB.messages.push(message);
         saveDB('messages');
 
-        // Send to recipient if online
         const recipientSocket = onlineUsers.get(data.recipientId);
         if (recipientSocket) {
             io.to(recipientSocket).emit('new_message', message);
         }
-
-        // Confirm to sender
         socket.emit('message_sent', message);
-    });
-
-    socket.on('typing', (data) => {
-        const recipientSocket = onlineUsers.get(data.recipientId);
-        if (recipientSocket) {
-            io.to(recipientSocket).emit('user_typing', {
-                userId: currentUser,
-                conversationId: data.conversationId,
-                isTyping: data.isTyping
-            });
-        }
-    });
-
-    socket.on('join_studyroom', (roomId) => {
-        socket.join(roomId);
-        socket.to(roomId).emit('user_joined_room', {
-            userId: currentUser,
-            userName: currentUserData?.fullName
-        });
-
-        const room = DB.studyRooms.find(r => r.id === roomId);
-        if (room && !room.participants.includes(currentUser)) {
-            room.participants.push(currentUser);
-            saveDB('studyRooms');
-        }
-    });
-
-    socket.on('studyroom_message', (data) => {
-        if (!currentUser || !data.roomId || !data.text?.trim()) return;
-
-        const room = DB.studyRooms.find(r => r.id === data.roomId);
-        if (room) {
-            const message = {
-                id: uuidv4(),
-                userId: currentUser,
-                text: data.text.trim(),
-                timestamp: Date.now()
-            };
-            room.messages.push(message);
-            saveDB('studyRooms');
-        }
-
-        io.to(data.roomId).emit('new_studyroom_message', {
-            userId: currentUser,
-            userName: currentUserData?.fullName,
-            text: data.text.trim(),
-            timestamp: Date.now()
-        });
     });
 
     socket.on('disconnect', () => {
         if (currentUser) {
             onlineUsers.delete(currentUser);
             io.emit('user_status', { userId: currentUser, status: 'offline' });
-            console.log(`${currentUserData?.fullName || 'User'} disconnected`);
         }
     });
 });
 
-// Initialize and start server
+// ==================== INITIALIZE AND START SERVER ====================
 initDB();
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 StudentLink server running on port ${PORT}`);
-    console.log(`👑 Admin account: username=admin, password=2009113`);
-    console.log(`🤖 AI Assistant: ${process.env.OPENROUTER_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-});
-
-// Serve static files from public folder
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Serve main page for root URL
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'studentlink.html'));
+    console.log(`👑 Admin: username=admin, password=2009113`);
+    console.log(`🤖 AI: ${process.env.OPENROUTER_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
 });
