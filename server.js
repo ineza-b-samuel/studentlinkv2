@@ -1000,3 +1000,11 @@ server.listen(PORT, () => {
     console.log(`🤖 AI Assistant: ${process.env.OPENROUTER_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+// Serve static files from public folder
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve main page for root URL
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'studentlink.html'));
+});
